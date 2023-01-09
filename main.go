@@ -14,10 +14,24 @@ const (
 	Text format = "text"
 )
 
+// Init will return a new logger with the given Route.
+func Init(r ...Route) *logger {
+	var rs []Route
+	rs = append(rs, r...)
+
+	l := logger{
+		Routes: rs,
+	}
+
+	return &l
+}
+
 // Event describes an event and can be sent by a Logger.
 type Event struct {
+	// Message is the short text presented by an event.
 	Message string
-	Data    map[string]string
+	// Data is a map of key-value pairs that can add context to an event.
+	Data map[string]string
 }
 
 // Route describes a strategy that a logger will use to deliver an event.
@@ -27,6 +41,7 @@ type Route struct {
 	Format format
 }
 
+// deliver will handle the conversion and storage or delivery of an event.
 func (r Route) deliver(e Event) error {
 	message, err := convert(e, r.Format)
 	if err != nil {
@@ -38,22 +53,10 @@ func (r Route) deliver(e Event) error {
 	}
 
 	if r.File != "" {
-		panic("File delivery is not implemented.")
+		panic("file delivery is not implemented")
 	}
 
 	return nil
-}
-
-// Init will return a new logger.
-func Init(r ...Route) *logger {
-	var rs []Route
-	rs = append(rs, r...)
-
-	l := logger{
-		Routes: rs,
-	}
-
-	return &l
 }
 
 // Send will deliver the given events to all routes associated with this logger.
@@ -71,10 +74,14 @@ func (l *logger) Send(e ...Event) error {
 	return nil
 }
 
+// logger is a type that contains a set of routes. A logger can receive events
+// via the logger.Send(...Event) method, and will deliver the received events to
+// all registered routes.
 type logger struct {
 	Routes []Route
 }
 
+// convert facilitates converting events to different formats.
 func convert(e Event, format format) (string, error) {
 	if format == JSON {
 		result, err := toJSON(e)
@@ -94,6 +101,7 @@ func convert(e Event, format format) (string, error) {
 	)
 }
 
+// toJson facilitates marshalling an event to JSON.
 func toJSON(e Event) (string, error) {
 	result, err := json.Marshal(e)
 	if err != nil {
@@ -105,6 +113,7 @@ func toJSON(e Event) (string, error) {
 	return string(result), nil
 }
 
+// toText facilitates marshalling an event to a formatted string.
 func toText(e Event) string {
 	result := e.Message
 
